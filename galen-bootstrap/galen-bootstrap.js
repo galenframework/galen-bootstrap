@@ -1,10 +1,17 @@
 load("basics.js");
 load("devices.js");
 
+importClass(org.apache.commons.lang3.StringEscapeUtils);
+
+
+
 var $galen = {
     settings: {
         website: "http://localhost",
-        veryLongWord: "Freundschaftsbezeigungen",
+        longWordsTesting: {
+            groupName: "long_word_test",
+            replaceText: "Freundschaftsbezeigungen"
+        },
         imageDiffSpecGenerators: {
             "image_diff_validation": function (imagePath) {
                 return "image file " + imagePath + ", map-filter denoise 1";
@@ -90,27 +97,92 @@ function testOnDevice(device, testNamePrefix, url, callback) {
     });
 }
 
-function checkRandomSizeLayout(driver, spec, tags, excludedTags, widthRange, iterationAmount) {
-    var sizes = [];
-    var widthStart = widthRange[0];
-    var widthEnd = widthRange[1];
-    var widthDelta = widthEnd - widthStart;
-    if (iterationAmount > widthDelta) {
-        iterationAmount = widthDelta;
+function _assertMandatoryArg(args, argName) {
+    if (args === undefined || args === null) {
+        throw new Error("Arguments are not defined");
+    } else {
+        if (!args.hasOwnProperty(argName)) {
+            throw new Error("Missing argument '" + argName + "'");
+        }
     }
+}
+
+function _assertMandatoryArgs(args, argNames) {
+    forArray(argNames, function (argName) {
+        _assertMandatoryArg(args, argName);
+    });
+}
+
+function parseSize(sizeText) {
+    var parts = sizeText.trim().split("x");
+    if (parts.length === 2) {
+        return {
+            width: parseInt(parts[0]),
+            height: parseInt(parts[1])
+        };
+    } else {
+        throw new Error("Incorrect size: " + sizeText);
+    }
+}
+
+function randomIntValueFromRange(start, end) {
+    if (start !== end) {
+        return Math.floor(Math.random() * (end - start)) + start;
+    } else {
+        return start;
+    }
+}
+
+/**
+ * Generates randomized variations of screen sizes and returns an array
+ */
+function randomBrowserSizes(sizeRange, iterationAmount) {
+    var sizes       = [],
+        sizeStart   = parseSize(sizeRange[0]),
+        sizeEnd     = parseSize(sizeRange[1]),
+        deltaWidth  = sizeEnd.width - sizeStart.width,
+        deltaHeight = sizeEnd.height - sizeStart.height,
+        maxDistance = Math.max(Math.abs(deltaWidth), Math.abs(deltaHeight));
 
     if (iterationAmount < 1) {
         throw new Error("Amount of iterations should be greater than 0");
     }
+    if (iterationAmount > maxDistance) {
+        iterationAmount = maxDistance;
+    }
 
-    var iterationDelta = Math.max(Math.round(widthDelta / iterationAmount), 1);
 
-    for (var i = 0; i < iterationAmount; i++) {
-        var size = Math.round(widthStart + i * iterationDelta + Math.floor(Math.random() * iterationDelta));
-        logged("Resizing to width " + size, function () {
-           resize(driver, size + "x700");
-           checkLayout(driver, spec, tags, excludedTags);
+    for (var i = 0; i < iterationAmount; i += 1) {
+        var widthStart = Math.floor(sizeStart.width + deltaWidth * i / iterationAmount);
+        var widthEnd = Math.floor(sizeStart.width + deltaWidth * (i + 1) / iterationAmount);
+
+        var heightStart = Math.floor(sizeStart.height + deltaHeight * i / iterationAmount);
+        var heightEnd = Math.floor(sizeStart.height + deltaHeight * (i + 1) / iterationAmount);
+
+        var w = randomIntValueFromRange(widthStart, widthEnd);
+        var h = randomIntValueFromRange(widthStart, widthEnd);
+        sizes.push(w + "x" + h);
+    }
+
+    return sizes;
+}
+
+function checkMultiSizeLayout(args) {
+    _assertMandatoryArgs(args, [
+        "driver", "spec", "sizes"
+    ]);
+
+    //driver, spec, tags, excludedTags, widthRange, iterationAmount
+
+    if (args.sizes.length > 0) {
+        forArray(args.sizes, function (size) {
+            logged("Resizing to width " + size, function () {
+               resize(args.driver, size);
+               checkLayout(args);
+            });
         });
+    } else {
+        throw new Error("The sizes argument is empty");
     }
 }
 
@@ -119,12 +191,16 @@ function checkRandomSizeLayout(driver, spec, tags, excludedTags, widthRange, ite
  * Used for testing layout when long words are used on major elements
  * This will only work in galen 2.2+
  */
-function checkLongWordsLayout(driver, spec, tags, excludedTags, groupName) {
-    groupName = groupName || "long_word_test";
-    var pageSpec = parsePageSpec({
-        driver: driver, 
-        spec: spec
-    });
+function checkLongWordsLayout(args) {
+    _assertMandatoryArgs(args, [
+        "driver", "spec"
+    ]);
+
+    var groupName = args.groupName || $galen.settings.longWordsTesting.groupName;
+    var replaceText = args.replaceText || $galen.settings.longWordsTesting.replaceText;
+    var escapedReplaceText = StringEscapeUtils.escapeEcmaScript(replaceText);
+
+    var pageSpec = parsePageSpec(args);
 
     logged("Replace text in major elements to a single long word", function (report) {
         var longWordsObjects = pageSpec.findObjectsInGroup(groupName);
@@ -133,27 +209,32 @@ function checkLongWordsLayout(driver, spec, tags, excludedTags, groupName) {
 
             var locator = pageSpec.getObjects().get(longWordsObjects.get(i));
             if (locator !== null) {
-                var webElement = GalenUtils.findWebElement(driver, locator);
-                driver.executeScript("var element = arguments[0]; element.innerHTML=\"" + $galen.settings.veryLongWord + "\";", webElement);
+                var webElement = GalenUtils.findWebElement(args.driver, locator);
+                args.driver.executeScript("var element = arguments[0]; element.innerHTML=\"" + escapedReplaceText + "\";", webElement);
             }
         }
     });
 
-    checkLayout(driver, spec, tags, excludedTags);
+    checkLayout(args);
 }
 
 
 /**
  * Will only work with galen 2.2+
  */
-function checkImageDiff (storage, driver, spec, specGenerators) {
-    specGenerators = specGenerators || $galen.settings.imageDiffSpecGenerators;
+function checkImageDiff (args) {
+    //storage, driver, spec, specGenerators
+    _assertMandatoryArgs(args, [
+        "driver", "spec", "storage"
+    ]);
 
-    if (!fileExists(storage)) {
-        makeDirectory(storage);
+    var specGenerators = args.specGenerators || $galen.settings.imageDiffSpecGenerators;
+
+    if (!fileExists(args.storage)) {
+        makeDirectory(args.storage);
     }
 
-    var iterationDirs = listDirectory(storage);
+    var iterationDirs = listDirectory(args.storage);
 
     var currentIteration = 0;
 
@@ -166,49 +247,45 @@ function checkImageDiff (storage, driver, spec, specGenerators) {
         var selectedFolder = iterationDirs[iterationDirs.length - 1];
         currentIteration = parseInt(selectedFolder);
 
-        var pageSpec = parsePageSpec({
-            driver: driver, 
-            spec: spec
-        });
+        var pageSpec = parsePageSpec(args);
         pageSpec.clearSections();
 
         var totalObjects = 0;
 
-        for (var imageDiffGroup in specGenerators) {
-            if (specGenerators.hasOwnProperty(imageDiffGroup)) {
-                var imageDiffObjects = GalenUtils.listToArray(pageSpec.findObjectsInGroup(imageDiffGroup));
+        forMap(specGenerators, function (imageDiffGroupName, imageDiffGroup) {
+            var imageDiffObjects = GalenUtils.listToArray(pageSpec.findObjectsInGroup(imageDiffGroupName));
 
-                totalObjects += imageDiffObjects.length;
+            totalObjects += imageDiffObjects.length;
 
-                for (var i = 0; i < imageDiffObjects.length; i++) {
-                    pageSpec.addSpec("Image Diff Validation", 
-                        imageDiffObjects[i], 
-                        specGenerators[imageDiffGroup](storage + "/" + selectedFolder + "/objects/" + imageDiffObjects[i] + ".png")
-                    );
-                }
-            }
-        }
+            forArray(imageDiffObjects, function (imageDiffObjectName) {
+                pageSpec.addSpec("Image Diff Validation", 
+                    imageDiffObjectName, 
+                    imageDiffGroup(args.storage + "/" + selectedFolder + "/objects/" + imageDiffObjectName + ".png")
+                );
+            });
+        });
 
         if (totalObjects === 0) {
             throw new Error("Couldn't find any objects for " + imageDiffGroup + " group");
         }
 
         logged("Verifying image diffs with #" + selectedFolder + " iteration", function () {
-            checkPageSpecLayout(driver, pageSpec);
+            checkPageSpecLayout(args.driver, pageSpec);
         });
     }
         
     currentIteration += 1;
-    var iterationPath = storage + "/" + currentIteration;
+    var iterationPath = args.storage + "/" + currentIteration;
 
     logged("Creating page dump to " + iterationPath, function () {
-        dumpPage({
-            driver: driver,
-            spec: spec,
+        var dumpArgs = {};
+        copyProperties(dumpArgs, args);
+        copyProperties(dumpArgs, {
             exportPath: iterationPath,
             onlyImages: true,
             excludedObjects: ["screen", "viewport"]
         });
+        dumpPage(dumpArgs);
     });
 
     if (iterationDirs.length == 0) {
@@ -226,5 +303,5 @@ function checkImageDiff (storage, driver, spec, specGenerators) {
     export.testOnDevice = testOnDevice;
     export.checkLongWordsLayout = checkLongWordsLayout;
     export.checkImageDiff = checkImageDiff;
-    export.checkRandomSizeLayout = checkRandomSizeLayout;
+    export.checkMultiSizeLayout = checkMultiSizeLayout;
 })(this);

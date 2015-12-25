@@ -9,7 +9,6 @@ function Device(settings) {
 }
 Device.prototype.withProperty = function (propName, value) {
     this[propName] = value;
-    System.out.println("Attached " + propName);
     return this;
 };
 
@@ -27,6 +26,21 @@ function inLocalBrowser(name, size, tags, browserType) {
         }
     });
 }
+
+function inSeleniumGrid(gridUrl, deviceName, tags, gridSettings) {
+    return new Device({
+        deviceName: deviceName,
+        tags: tags,
+        initDriver: function (url) {
+            this.driver = createGridDriver(gridUrl, gridSettings);
+            return this.driver;
+        },
+        quit: function () {
+            this.driver.quit();
+        }
+    });
+}
+
 
 var _globalSingleDriver = null;
 function inSingleBrowser(name, size, tags) {
@@ -62,3 +76,9 @@ afterTestSuite(function () {
 });
 
 
+(function (export) {
+    export.inLocalBrowser = inLocalBrowser;
+    export.inSeleniumGrid = inSeleniumGrid;
+    export.inSingleBrowser = inSingleBrowser;
+    export.Device = Device;
+})(this);
