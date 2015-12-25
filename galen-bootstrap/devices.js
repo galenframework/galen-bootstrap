@@ -41,6 +41,31 @@ function inSeleniumGrid(gridUrl, deviceName, tags, gridSettings) {
     });
 }
 
+function convertGridDevices(devicesJson, gridUrl) {
+    if (gridUrl === undefined || gridUrl === null) {
+        throw new Error("Missing gridUrl argument");
+    }
+    var devices = {};
+    forMap(devicesJson, function (deviceName, deviceSettings) {
+        devices[deviceName] = inSeleniumGrid(gridUrl, deviceSettings.deviceName, deviceSettings.tags, deviceSettings.gridSettings);
+    });
+    return devices;
+}
+
+function loadGridDevices(configPath, gridUrl) {
+    if (gridUrl === undefined || gridUrl === null) {
+        throw new Error("Missing gridUrl argument");
+    }
+    if (fileExists(configPath)) {
+        var devicesText = readFile(configPath);
+        var devicesJson = JSON.parse(devicesText);
+        return convertGridDevices(devicesJson, gridUrl);
+    } else {
+        throw new Error("Devices file not found: " + configPath);
+    }
+}
+
+
 
 var _globalSingleDriver = null;
 function inSingleBrowser(name, size, tags) {
@@ -81,4 +106,5 @@ afterTestSuite(function () {
     export.inSeleniumGrid = inSeleniumGrid;
     export.inSingleBrowser = inSingleBrowser;
     export.Device = Device;
+    export.loadGridDevices = loadGridDevices;
 })(this);

@@ -96,6 +96,13 @@ function testOnDevice(device, testNamePrefix, url, callback) {
         _test(testNamePrefix, url, callback);
     });
 }
+function testOnDevices(devicesArray, testNamePrefix, url, callback) {
+    forArray(devicesArray, function (device) {
+        forOnly(device, function() {
+            _test(testNamePrefix, url, callback);
+        });
+    });
+}
 
 function _assertMandatoryArg(args, argName) {
     if (args === undefined || args === null) {
