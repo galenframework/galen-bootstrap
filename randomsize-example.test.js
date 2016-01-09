@@ -17,7 +17,7 @@ testOnAllDevices("Welcome page test", "/", function (driver, device) {
         spec: "homepage.gspec",
         tags: device.tags,
         excludedTags: device.excludedTags,
-        sizes: randomBrowserSizes(device.sizeRange, 8)
+        sizes: sizeRandomVariations(device.sizeRange, 8)
     });
 });
 

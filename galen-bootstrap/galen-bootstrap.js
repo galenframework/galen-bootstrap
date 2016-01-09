@@ -143,7 +143,7 @@ function randomIntValueFromRange(start, end) {
 /**
  * Generates randomized variations of screen sizes and returns an array
  */
-function randomBrowserSizes(sizeRange, iterationAmount) {
+function sizeRandomVariations(sizeRange, iterationAmount) {
     var sizes       = [],
         sizeStart   = parseSize(sizeRange[0]),
         sizeEnd     = parseSize(sizeRange[1]),
@@ -168,6 +168,34 @@ function randomBrowserSizes(sizeRange, iterationAmount) {
 
         var w = randomIntValueFromRange(widthStart, widthEnd);
         var h = randomIntValueFromRange(widthStart, widthEnd);
+        sizes.push(w + "x" + h);
+    }
+
+    return sizes;
+}
+
+function sizeVariations(sizeRange, iterationAmount) {
+    var sizes       = [],
+        sizeStart   = parseSize(sizeRange[0]),
+        sizeEnd     = parseSize(sizeRange[1]),
+        deltaWidth  = sizeEnd.width - sizeStart.width,
+        deltaHeight = sizeEnd.height - sizeStart.height,
+        maxDistance = Math.max(Math.abs(deltaWidth), Math.abs(deltaHeight));
+
+    if (iterationAmount === undefined || iterationAmount === null) {
+        iterationAmount = maxDistance;
+    }
+    else if (iterationAmount < 1) {
+        throw new Error("Amount of iterations should be greater than 0");
+    }
+    if (iterationAmount > maxDistance) {
+        iterationAmount = maxDistance;
+    }
+
+
+    for (var i = 0; i < iterationAmount; i += 1) {
+        var w = Math.floor(sizeStart.width + deltaWidth * i / iterationAmount);
+        var h = Math.floor(sizeStart.height + deltaHeight * i / iterationAmount);
         sizes.push(w + "x" + h);
     }
 
@@ -311,4 +339,6 @@ function checkImageDiff (args) {
     export.checkLongWordsLayout = checkLongWordsLayout;
     export.checkImageDiff = checkImageDiff;
     export.checkMultiSizeLayout = checkMultiSizeLayout;
+    export.sizeRandomVariations = sizeRandomVariations;
+    export.sizeVariations = sizeVariations;
 })(this);
