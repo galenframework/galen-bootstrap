@@ -138,4 +138,93 @@ In the above example it will take delta = (1200 - 900) / 6 and will use this val
 
 
 
+Long words testing
+----------------------
+When a website is supposed to be displayed in multiple countries with different languages it is an often problem that some long word in a specific element breaks the layout. It might not only be due to i18n support but this issue could happen due to user input. Fortunately this could be tested by replacing the elements with a long word (e.g. german "Freundschaftsbezeigungen") before checking layout. You don't have to rewrite your tests or spec for this type of testing. All you need to do is to mark the objects on your page for which it should replace a text with `long_word_test` group. This can be done using `@groups` section.
+
+
+```gspec
+@objects
+    header                   #header .middle-wrapper
+        logo                    #header-logo
+        text                    h1
+    menu                     #menu ul
+        item-*                  li a
+    content                  #content
+    footer                   #footer
+
+@groups
+    long_word_test                  header.text,menu.item-*
+```
+
+In the example above we have marked a header text and all menu items as a group `long_word_test`. Now we need to check the layout using `checkLongWordsLayout` function.
+
+```javascript
+testOnAllDevices("Long Words. Welcome page test with", "/", function (driver, device) {
+    checkLongWordsLayout({
+        driver: driver, 
+        spec: "homepage.gspec",
+        tags: device.tags,
+        excludedTags: device.excludedTags,
+    });
+});
+```
+
+As you can see the function is very simmilar to standard `checkLayout` function from Galen API. By default it replaces text with `"Freundschaftsbezeigungen"` word but you can change this behaviour in settings:
+
+```javascript
+$galen.settings.longWordsTesting.replaceText = "My_very_long_word";
+```
+
+
+Image Diff Based Testing
+------------------------
+Galen is also capable of testing images of individual parts of the page using [image spec](http://galenframework.com/docs/reference-galen-spec-language-guide/#Image). But it takes a bit more effort in this case as you have to prepare the sample images with which Galen will compare the actual image on screenshot. Galen Bootstrap provides another interesting image validation implementation. You can use `checkImageDiff` function in order to compare individual elements with previous images from previous test run. How is this possible? It works like this:
+
+1. You need to mark the object with  `image_diff_validation` or `image_diff_validation_blur` groups. This way you can select which elements should be tested with this approach.
+2. The first run gives error as there are obviously no images from previous test run. This is just a dry run to generate image samples.
+3. In the end it creates a page dump and copies all images for all objects into specified storage.
+4. Next time you run your tests it takes image samples from last iteration and uses them in order to compare with the current images on screenshot.
+5. If something is different you will get an error in the report.
+
+Here is an example of how to mark elements in gspec file:
+
+```gspec
+@objects
+    header                   #header .middle-wrapper
+        logo                    #header-logo
+        text                    h1
+    menu                     #menu ul
+        item-*                  li a
+    content                  #content
+    footer                   #footer
+
+@groups
+    image_diff_validation           header.logo
+    image_diff_validation_blur      menu.item-*,header.text
+```
+
+And the test:
+
+```javascript
+testOnAllDevices("Image Diff. Welcome page test", "/", function (driver, device) {
+    checkImageDiff({
+        driver: driver, 
+        storage: "image-diff/welcome-page-" + device.deviceName, 
+        spec: "homepage.gspec"
+    });
+});
+```
+
+In the example above we marked `header.logo` with `image_diff_validation` group but menu items and header text are marked with `image_diff_validation_blur` group. This means that different image specs will be applied to these elements. For header logo it will perform strict pixel-to-pixel comparison with 1 pixel denoise filter. And for the `image_diff_validation_blur` it will compare images with blur filter and offset analyzer making it less strict. You can change this behavior in settings and create your own image spec generators like this:
+
+```
+$galen.settings.imageDiffSpecGenerators["image_diff_validation"] = function (imagePath) {
+    return "image file " + imagePath + ", map-filter denoise 5, filter blur 2, error 5%";
+};
+```
+
+It is very important to specify the correct storage for each device. That is why in the example above we added `device.deviceName` to the storage path: `storage: "image-diff/welcome-page-" + device.deviceName`. This way the images for different devices will not be overwritten.
+
+
 
