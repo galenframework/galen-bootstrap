@@ -1,4 +1,4 @@
-load("galen-bootstrap/galen-bootstrap.js");
+load("../galen-bootstrap/galen-bootstrap.js");
 
 $galen.settings.website = "http://testapp.galenframework.com";
 $galen.registerDevice("mobile", inSingleBrowser("mobile emulation", "450x800", ["mobile"]));
@@ -14,7 +14,7 @@ $galen.devices.desktop.sizeRange = ["900x600", "1200x768"];
 testOnAllDevices("Welcome page test", "/", function (driver, device) {
     checkMultiSizeLayout({ 
         driver: driver,
-        spec: "homepage.gspec",
+        spec: "specs/homepage.gspec",
         tags: device.tags,
         excludedTags: device.excludedTags,
         sizes: sizeRandomVariations(device.sizeRange, 8)

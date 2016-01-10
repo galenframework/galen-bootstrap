@@ -1,0 +1,50 @@
+@import common.gspec
+
+@objects
+    header                   #header .middle-wrapper
+        logo                    #header-logo
+        text                    h1
+    menu                     #menu ul
+        item-*                  li a
+    content                  #content
+    footer                   #footer .middle-wrapper
+
+    welcome_block       .jumbotron
+    greeting            #welcome-page h1
+    text_block-*        #welcome-page p
+    login_button        #welcome-page .button-login
+
+@groups
+    image_diff_validation           header.logo
+    image_diff_validation_blur      menu.item-*,header.text
+    long_word_test                  header.text,menu.item-*
+    (greeting_element, greeting_elements)   greeting, text_block-*
+
+@set
+    welcome_block_margin                20px
+    greeting_height                     40 to 70px
+    greeting_elements_margin            30px
+    greeting_elements_side_margin       60 to 75px
+    greeting_elements_vertical_margin   8 to 20px
+    login_button_text                   Login
+    login_button_desktop_width          ~ 78px
+
+@on tablet, mobile
+    @set greeting_elements_side_margin  45 to 60px
+
+= Welcome block =
+    | welcome_block is at the top inside content with ${welcome_block_margin} margin
+    | a welcome_block stretches to content with ${welcome_block_margin} margin
+
+    | every &greeting_element is inside welcome_block ${greeting_elements_margin} left right
+    | &greeting_elements sides are vertically inside welcome_block with ${greeting_elements_side_margin} margin
+    | &greeting_elements are aligned vertically above each other with ${greeting_elements_vertical_margin} margin
+    | every &greeting_element is more or less readable
+
+    login_button:
+        text is "${login_button_text}"
+        | is tapable
+        @on desktop, tablet
+            width ${login_button_desktop_width}
+        @on mobile
+            | stretches to welcome_block with ${greeting_elements_margin} margin

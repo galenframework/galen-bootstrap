@@ -1,0 +1,38 @@
+@import common-data.gspec
+
+= Skeleton =
+    | &skeleton_elements sides are vertically inside screen
+    | &skeleton_elements are aligned vertically above each other
+
+    = A page should be centered horizontally inside screen with ${skeleton_max_width} on desktop, but on mobile and tablet it should stretch to screen =
+        | every &skeleton_element is centered horizontally inside screen
+
+        @on desktop
+            | every &skeleton_element has width ${skeleton_max_width}
+        @on mobile, tablet
+            | every &skeleton_element is aligned vertically all screen
+
+= Header =
+    header:
+        height ${header_height}
+        @on mobile, tablet
+            text is "${header_mobile_text}"
+        @on desktop
+            text is "${header_desktop_text}"
+
+= Menu =
+    @on *
+        | amount of visible &menu_items should be > 3
+        | every &menu_item is inside menu and has height ${menu_height}
+        | first &menu_item is inside menu 0px top left
+
+    @on desktop, tablet
+        | &menu_items are aligned horizontally next to each other
+        | every &menu_item is aligned horizontally all menu
+    @on mobile
+        | &menu_items are rendered in 2 column table layout
+
+
+= Footer =
+    footer:
+        height ${footer_height}

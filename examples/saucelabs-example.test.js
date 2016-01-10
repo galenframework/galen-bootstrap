@@ -1,5 +1,4 @@
-
-load("galen-bootstrap/galen-bootstrap.js");
+load("../galen-bootstrap/galen-bootstrap.js");
 
 
 $galen.settings.website = "http://testapp.galenframework.com";
