@@ -78,7 +78,7 @@ testOnDevice($galen.devices.desktop, "Welcome page test", "/", function (driver,
         spec: "homepage.gspec",
         tags: device.tags,
         excludedTags: device.excludedTags,
-        sizes: ["900x768", "920x768", 940x768", "1024x768"]
+        sizes: ["900x768", "920x768", "940x768", "1024x768"]
     });
 });
 ```
@@ -218,7 +218,7 @@ testOnAllDevices("Image Diff. Welcome page test", "/", function (driver, device)
 
 In the example above we marked `header.logo` with `image_diff_validation` group but menu items and header text are marked with `image_diff_validation_blur` group. This means that different image specs will be applied to these elements. For header logo it will perform strict pixel-to-pixel comparison with 1 pixel denoise filter. And for the `image_diff_validation_blur` it will compare images with blur filter and offset analyzer making it less strict. You can change this behavior in settings and create your own image spec generators like this:
 
-```
+```javascript
 $galen.settings.imageDiffSpecGenerators["image_diff_validation"] = function (imagePath) {
     return "image file " + imagePath + ", map-filter denoise 5, filter blur 2, error 5%";
 };
