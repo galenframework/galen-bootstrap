@@ -3,7 +3,38 @@ load("devices.js");
 
 importClass(org.apache.commons.lang3.StringEscapeUtils);
 
+function GalenEvent() {
+    this.callbacks = [];
+}
+GalenEvent.prototype.registerCallback = function (eventCallback) {
+    this.callbacks.push(eventCallback);
+};
+GalenEvent.prototype.invokeEvent = function (args) {
+    this.callbacks.forEach(function (callback) {
+        callback.apply(null, args);
+    });
+};
 
+function GalenEventsHandler() {
+    this.events =  {};
+}
+GalenEventsHandler.Types = {
+    onDriverCreated: "onDriverCreated"
+};
+GalenEventsHandler.prototype.onDriverCreated = function (eventCallback) {
+    this.registerEvent(GalenEventsHandler.Types.onDriverCreated, eventCallback);
+};
+GalenEventsHandler.prototype.registerEvent = function (eventType, eventCallback) {
+    if (!this.events.hasOwnProperty(eventType)) {
+        this.events[eventType] = new GalenEvent();
+    }
+    this.events[eventType].registerCallback(eventCallback);
+};
+GalenEventsHandler.prototype.invokeEvent = function (eventType, arguments) {
+    if (this.events.hasOwnProperty(eventType)) {
+        this.events[eventType].invokeEvent(arguments);
+    }
+};
 
 var $galen = {
     settings: {
@@ -32,9 +63,13 @@ var $galen = {
         forMap(devices, function (name, device) {
             that.registerDevice(name, device);
         });
-    }
+    },
+    events: new GalenEventsHandler()
 };
 
+function callEventOnDriverCreated(driver) {
+    $galen.events.invokeEvent(GalenEventsHandler.Types.onDriverCreated, [driver]);
+}
 
 function openDriverForDevice(device, url) {
     var fullUrl = null;
@@ -56,6 +91,9 @@ function openDriverForDevice(device, url) {
         session.report().info("Open " + fullUrl);
     }
     var driver = device.initDriver(fullUrl);
+    session.put("driver", driver);
+
+    callEventOnDriverCreated(driver);
     return driver;
 }
 
