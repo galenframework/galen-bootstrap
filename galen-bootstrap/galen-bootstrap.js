@@ -205,7 +205,7 @@ function sizeRandomVariations(sizeRange, iterationAmount) {
         var heightEnd = Math.floor(sizeStart.height + deltaHeight * (i + 1) / iterationAmount);
 
         var w = randomIntValueFromRange(widthStart, widthEnd);
-        var h = randomIntValueFromRange(widthStart, widthEnd);
+        var h = randomIntValueFromRange(heightStart, heightEnd);
         sizes.push(w + "x" + h);
     }
 
