@@ -33,6 +33,11 @@ function inSeleniumGrid(gridUrl, deviceName, tags, gridSettings) {
         tags: tags,
         initDriver: function (url) {
             this.driver = createGridDriver(gridUrl, gridSettings);
+
+            if (url !== null) {
+                this.driver.get(url);
+            }
+
             return this.driver;
         },
         quit: function () {
