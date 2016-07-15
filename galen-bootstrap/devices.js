@@ -22,7 +22,7 @@ function inLocalBrowser(name, size, tags, browserType) {
             return this.driver;
         },
         quit: function () {
-            this.driver.quit();
+            this.driver && this.driver.quit();
         }
     });
 }
@@ -41,7 +41,7 @@ function inSeleniumGrid(gridUrl, deviceName, tags, gridSettings) {
             return this.driver;
         },
         quit: function () {
-            this.driver.quit();
+            this.driver && this.driver.quit();
         }
     });
 }
@@ -65,9 +65,9 @@ function loadGridDevices(configPath, gridUrl) {
         var devicesText = readFile(configPath);
         var devicesJson = JSON.parse(devicesText);
         return convertGridDevices(devicesJson, gridUrl);
-    } else {
-        throw new Error("Devices file not found: " + configPath);
     }
+
+    throw new Error("Devices file not found: " + configPath);
 }
 
 
