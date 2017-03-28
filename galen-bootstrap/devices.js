@@ -32,16 +32,17 @@ function inSeleniumGrid(gridUrl, deviceName, tags, gridSettings) {
         deviceName: deviceName,
         tags: tags,
         initDriver: function (url) {
-            this.driver = createGridDriver(gridUrl, gridSettings);
+            var driver = createGridDriver(gridUrl, gridSettings);
 
             if (url !== null) {
-                this.driver.get(url);
+                driver.get(url);
             }
 
-            return this.driver;
+            return driver;
         },
         quit: function () {
-            this.driver && this.driver.quit();
+            var driver = session.get("driver");
+            driver && driver.quit();
         }
     });
 }
